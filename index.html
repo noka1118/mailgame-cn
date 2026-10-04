@@ -37980,6 +37980,8 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
     let seniorMealAccepted = false;
     let seniorMealAcceptedDay = null;
     let seniorMealDay = null;
+    let seniorMealEndDay = null;
+    let seniorMealEndHour = null;
     let seniorThanksSent = false;
     let entranceExamPastPaperObtained = false;
     let renFirstInviteSent = false;
@@ -38146,6 +38148,7 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
     let suppressAutosave = false;
     let freshGameSnapshot = null;
     const SAVE_BINDING_NAMES = (
+      "seniorMealEndDay seniorMealEndHour " +
       "list selectedId unreadById nextMailId gameDay gameHour gameOver housingMode rentLabel rentAmount rentDaysLeft rentDueDay " +
       "shortstayRentStartDay shortstayRentPeriodDays dormRentStartDay dormRentPeriodDays rentPaid dormApplicationStarted dormInfoSubmitted dormDocsSubmitted dormStatementSubmitted dormFinalSubmitted dormApproved dormFeePaid " +
       "dormMoveInPending dormMoveInScheduledDay dormMoveInScheduledHour dormMoveInSceneCompleted dormRoomAssignmentMailSent dormRoomAssignmentDueDay dormRoomAssignmentDueHour dormMoveInRescheduleCount aoiFirstContactMailSent shortstayCheckoutMailSent dormMoveInCompleteMailSent housingTransitionProtected aoiIntroduced aoiFriendship dormKitchenIntroduced " +
@@ -46981,8 +46984,8 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
           classScheduleIntroSent === true
         ) &&
         (
-          gameDay > schoolStartDay + 1 ||
-          (gameDay === schoolStartDay + 1 && gameHour >= 15)
+          gameDay > schoolStartDay ||
+          (gameDay === schoolStartDay && gameHour >= 15)
         )
       ) {
         entranceExamNoticeSent = true;
@@ -47158,9 +47161,14 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
 
       if (seniorMealAccepted === true && seniorThanksSent !== true && (seniorMealDay !== null || seniorMealAcceptedDay !== null)) {
         var mealDay = seniorMealDay !== null ? seniorMealDay : seniorMealAcceptedDay;
-        var seniorThanksDay = mealDay + 1;
+        var completedMealDay = seniorMealEndDay !== null ? seniorMealEndDay : mealDay;
+        var mealFinished = seniorMealEndDay === null || gameDay > seniorMealEndDay || (gameDay === seniorMealEndDay && gameHour >= seniorMealEndHour);
+        var seniorThanksDay = completedMealDay + 1;
         var seniorThanksHour = 10;
-        if (gameDay > seniorThanksDay || (gameDay === seniorThanksDay && gameHour >= seniorThanksHour)) {
+        var urgentPaper = entranceExamDay !== null && gameDay >= entranceExamDay - 1;
+        var paperAfterExam = entranceExamCompleted === true || (entranceExamDay !== null && (gameDay > entranceExamDay || (gameDay === entranceExamDay && gameHour >= 9)));
+        var sameEveningPaper = gameDay === completedMealDay;
+        if (mealFinished && (urgentPaper || gameDay > seniorThanksDay || (gameDay === seniorThanksDay && gameHour >= seniorThanksHour))) {
           pushFixedMail({
             id: "main_entrance_exam_senior_thanks_001",
             type: "main",
@@ -47168,22 +47176,26 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
             line: "main_entrance_exam",
             fixedMail: true,
             from: "梁悠真 <yuma.qsupport@campus.edu>",
-            subject: "昨天谢谢你，顺便发你一个东西",
-            preview: "昨天真的谢谢你听我说那么久...",
-            body:
+            subject: paperAfterExam ? "谢谢你听我说，资料发晚了" : sameEveningPaper ? "参考卷找到了，先发给你" : "昨天谢谢你，顺便发你一个东西",
+            preview: paperAfterExam ? "这次测试已经结束，这份资料可以留作之后补习对照。" : sameEveningPaper ? "怕你明早来不及，找到文件就先发来了。" : "昨天真的谢谢你听我说那么久...",
+            body: paperAfterExam
+              ? "谢谢你陪我吃饭、听我说了那么久。\n\n去年的参考卷我找到了，但这次发晚了，已经赶不上你的测试。抱歉。\n\n你可以留着对照考过的题型，之后补习基础也用得上。它不会改变这次已经考完的结果。"
+              : sameEveningPaper
+              ? "刚回去找到参考卷了，怕你明早来不及，先发给你。\n\n这不是今年的题，也不是考试答案；题型和复习方向可以参考。\n\n今天听我讲那么久，谢谢你。先准备考试，别急着回我。"
+              :
               "昨天真的谢谢你听我说那么久。\n\n" +
               "我后来想了一下，昨天在 Q-support 那边确实不太方便说太多。其实我之前参与过这类基础确认测试的出题辅助。\n\n" +
               "今年的内容当然不能提前透露，这个不行。但我可以把去年的参考复习卷发给你。题目不会完全一样，不过题型和复习方向应该有参考价值。\n\n" +
               "昨天我状态有点乱，可能说了太多和考试没关系的事情。这个算是补偿，也算是谢谢你听我讲完。",
-            openMessage: "你沉默了一下。原来那五个小时的情绪垃圾桶，真的换来了东西。",
-            logText: "Q-support 学长发来了参考复习卷",
+            openMessage: paperAfterExam ? "资料确实到了，只是这次没赶上。你把它留作考后对照。" : "你沉默了一下。原来那五个小时的情绪垃圾桶，真的换来了东西。",
+            logText: paperAfterExam ? "梁悠真发来了考后对照资料" : "Q-support 学长发来了参考复习卷",
             actions: [
               {
                 label: "查看参考卷",
-                viewEntranceExamPastPaper: true,
+                viewEntranceExamPastPaper: !paperAfterExam,
                 mentalEffect: 8,
                 socialConnectionEffect: 1,
-                result:
+                result: paperAfterExam ? "你打开了去年的参考卷，对照刚考过的题型。\n\n它可以帮助你补习基础，但这次考试的成绩已经确定。" :
                   "你打开了去年的参考复习卷。\n\n" +
                   "不是原题，也没有答案直接摆在眼前。但它让你第一次看清这场考试到底想考什么。\n\n" +
                   "题型、顺序、重点，都比预告邮件里的范围清楚得多。之前那些散乱的复习内容突然有了边界。\n\n" +
@@ -47220,8 +47232,8 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
             fixedMail: true,
             from: "梁悠真 <yuma.qsupport@campus.edu>",
             subject: "开学考结果出来了吗？",
-            preview: "之前那个参考卷不知道有没有帮上一点忙...",
-            body:
+            preview: entranceExamPastPaperObtained ? "之前那个参考卷不知道有没有帮上一点忙..." : "上次资料没赶上，想问问你这次考得怎么样。",
+            body: !entranceExamPastPaperObtained ? "开学考结果出来了吗？\n\n上次参考卷没能及时帮上忙，我有点过意不去。你这次考得怎么样？\n\n之后如果还想整理基础题型，可以来 Q-support 找我。" :
               "开学考结果出来了吗？\n\n" +
               "之前发你的参考卷，不知道有没有真的帮上一点忙。虽然不是今年的题，但题型方向应该差不多。\n\n" +
               "上次吃饭的时候我讲太多自己的事了，现在想想有点不好意思。你要是考得还行，那就太好了。",
@@ -47234,7 +47246,7 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
                 yumaFriendshipEffect: 3,
                 socialConnectionEffect: 1,
                 mentalEffect: 4,
-                result:
+                result: !entranceExamPastPaperObtained ? "你谢谢梁悠真后来补发的资料，也坦白说这次没能用上。\n\n他回了句：“抱歉，下次我先把资料找好。”你们仍然可以继续来往。" :
                   "你认真回了梁悠真，告诉他参考卷真的帮了很多。\n\n" +
                   "你没有细说那顿饭到底有多离谱，只是说如果没有那份资料，自己大概会复习得更乱。\n\n" +
                   "梁悠真很快回了你一句：“那就好。上次真的谢谢你听我讲那么久。”\n\n" +
@@ -47248,7 +47260,7 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
                 yumaFriendshipEffect: 1,
                 socialConnectionEffect: 1,
                 mentalEffect: 1,
-                result:
+                result: !entranceExamPastPaperObtained ? "你告诉梁悠真自己考得还不错。\n\n他松了口气，说之后有不会的地方仍然可以来问。" :
                   "你简单告诉梁悠真，自己考得还不错。\n\n" +
                   "梁悠真回得很快，像是松了一口气：“那太好了，我还担心参考卷帮不上忙。”\n\n" +
                   "你们的关系没有突然变得多亲近，但至少这次对话不像单纯的信息交换。",
@@ -53091,6 +53103,13 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
           btn.classList.add("done");
         }
         btn.addEventListener("click", function () {
+          if (act.viewEntranceExamPastPaper === true && (entranceExamCompleted === true || (entranceExamDay !== null && (gameDay > entranceExamDay || (gameDay === entranceExamDay && gameHour >= 9))))) {
+            markActionDone(mail, act, "已查看");
+            showResultOverlay("你打开了参考卷。\n\n这次考试已经开始或结束，资料可以留作考后对照，不会改变已经结算的成绩。");
+            renderEmailView();
+            saveGameState(true);
+            return;
+          }
           if (act.addTodo && typeof act.addTodo === "object" && isTodoExpired(act.addTodo)) return;
           if (isWorkActionExpired(mail, act)) return;
           if (act.storyEventAction) {
@@ -53541,6 +53560,8 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
             seniorMealAccepted = true;
             seniorMealAcceptedDay = gameDay;
             seniorMealDay = gameDay;
+            seniorMealEndDay = gameDay + Math.floor((gameHour + tEff) / 24);
+            seniorMealEndHour = (gameHour + tEff) % 24;
           }
           if (act.viewEntranceExamPastPaper === true) {
             entranceExamPastPaperObtained = true;
