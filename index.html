@@ -52308,22 +52308,22 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
     const MAIL_SENDER_DOMAIN_ALIASES = {
       "campus.edu": "swu.ac.jp",
       "somewhere.edu": "swu.ac.jp",
-      "student.campus.edu": "student.swu.ac.jp",
-      "dorm-campus.edu": "dorm.swu.ac.jp",
-      "student-union.edu": "clubs.swu.ac.jp",
-      "campus-bookstore.edu": "bookstore.swu.ac.jp",
-      "campus-clinic.edu": "health.swu.ac.jp",
-      "campus-pharmacy.edu": "pharmacy.swu.ac.jp",
-      "campus-cloud.edu": "cloud.swu.ac.jp",
-      "course-platform.edu": "lms.swu.ac.jp",
-      "print-campus.edu": "print.swu.ac.jp",
-      "cafeteria-campus.edu": "dining.swu.ac.jp",
-      "campus-store.edu": "coop.swu.ac.jp",
-      "campus-board.edu": "jobs.swu.ac.jp",
-      "campus-research.edu": "research.swu.ac.jp",
-      "campus-mail.edu": "mail.swu.ac.jp",
-      "campus-work.jp": "jobs.swu.ac.jp",
-      "campus-cafe.jp": "cafe.swu.ac.jp",
+      "student.campus.edu": "swu.ac.jp",
+      "dorm-campus.edu": "swu.ac.jp",
+      "student-union.edu": "swu.ac.jp",
+      "campus-bookstore.edu": "swu.ac.jp",
+      "campus-clinic.edu": "swu.ac.jp",
+      "campus-pharmacy.edu": "swu.ac.jp",
+      "campus-cloud.edu": "swu.ac.jp",
+      "course-platform.edu": "swu.ac.jp",
+      "print-campus.edu": "swu.ac.jp",
+      "cafeteria-campus.edu": "swu.ac.jp",
+      "campus-store.edu": "swu.ac.jp",
+      "campus-board.edu": "swu.ac.jp",
+      "campus-research.edu": "swu.ac.jp",
+      "campus-mail.edu": "swu.ac.jp",
+      "campus-work.jp": "swu.ac.jp",
+      "campus-cafe.jp": "swu.ac.jp",
       "house.jp": "midorie-stay.co.jp",
       "shortstay.jp": "midorie-stay.co.jp",
       "temporary-stay.jp": "midorie-stay.co.jp",
@@ -52342,22 +52342,31 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
       "intemet-service.jp": "hikari-nct.co.jp"
     };
 
+    const MAIL_SENDER_CAMPUS_ADDRESS_PREFIXES = {
+      "student-union.edu": "student-union", "campus-bookstore.edu": "bookstore",
+      "campus-clinic.edu": "health", "campus-pharmacy.edu": "pharmacy",
+      "campus-cloud.edu": "cloud", "course-platform.edu": "lms", "print-campus.edu": "print",
+      "cafeteria-campus.edu": "dining", "campus-store.edu": "coop", "campus-board.edu": "jobs",
+      "campus-research.edu": "research", "campus-mail.edu": "mail",
+      "campus-work.jp": "jobs", "campus-cafe.jp": "cafe"
+    };
+
     const MAIL_SENDER_PERSON_ALIASES = {
-      "ren.classmate@campus.edu": ["黒瀬 蓮", "ren.kurose@student.swu.ac.jp"],
-      "yuma.qsupport@campus.edu": ["梁悠真", "yuma.liang@student.swu.ac.jp"],
-      "aoi.miyake@campus.edu": ["三宅 葵", "aoi.miyake@student.swu.ac.jp"],
-      "yota.kobayashi@campus.edu": ["小林 陽太", "yota.kobayashi@student.swu.ac.jp"],
-      "saeki.haru@student.campus.edu": ["佐伯 遥", "haru.saeki@student.swu.ac.jp"],
+      "ren.classmate@campus.edu": ["黒瀬 蓮", "ren.kurose@swu.ac.jp"],
+      "yuma.qsupport@campus.edu": ["梁悠真", "yuma.liang@swu.ac.jp"],
+      "aoi.miyake@campus.edu": ["三宅 葵", "aoi.miyake@swu.ac.jp"],
+      "yota.kobayashi@campus.edu": ["小林 陽太", "yota.kobayashi@swu.ac.jp"],
+      "saeki.haru@student.campus.edu": ["佐伯 遥", "haru.saeki@swu.ac.jp"],
       "morita.naoko@campus.edu": ["森田直子", "naoko.morita@swu.ac.jp"],
-      "seiji.takahashi@dorm-campus.edu": ["高橋 誠司", "seiji.takahashi@dorm.swu.ac.jp"],
+      "seiji.takahashi@dorm-campus.edu": ["高橋 誠司", "seiji.takahashi@swu.ac.jp"],
       "mother@home.cn": ["妈妈", "qinghe_1976@163.com"],
-      "classmate@campus.edu": ["同班同学", "s26c018@student.swu.ac.jp"],
-      "friend@campus.edu": ["同学", "s26c031@student.swu.ac.jp"],
-      "senior@dorm-campus.edu": ["宿舍前辈", "s24d012@student.swu.ac.jp"],
-      "coworker@campus-work.jp": ["兼职同事", "shift.member17@jobs.swu.ac.jp"],
-      "student18942@campus.edu": ["s26c042", "s26c042@student.swu.ac.jp"],
+      "classmate@campus.edu": ["同班同学", "s26c018@swu.ac.jp"],
+      "friend@campus.edu": ["同学", "s26c031@swu.ac.jp"],
+      "senior@dorm-campus.edu": ["宿舍前辈", "s24d012@swu.ac.jp"],
+      "coworker@campus-work.jp": ["兼职同事", "shift.member17@swu.ac.jp"],
+      "student18942@campus.edu": ["s26c042", "s26c042@swu.ac.jp"],
       "sato@somewhere.edu": ["佐藤老师", "sato@swu.ac.jp"],
-      "self@inbox.local": ["我", "s26c307@student.swu.ac.jp"]
+      "self@inbox.local": ["我", "s26c307@swu.ac.jp"]
     };
 
     const MAIL_SENDER_NAME_ALIASES = {
@@ -52433,7 +52442,9 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
       var person = MAIL_SENDER_PERSON_ALIASES[(local + "@" + domain).toLowerCase()];
       if (person) return (MAIL_SENDER_NAME_ALIASES[name] || name || person[0]) + " <" + person[1] + ">";
       name = MAIL_SENDER_NAME_ALIASES[name] || name;
-      if (!name && (domain === "campus.edu" || domain === "somewhere.edu")) {
+      if (!name && domain === "campus-work.jp") name = "学生兼职中心";
+      if (!name && domain === "jasso-support.jp") name = "学生事务处·JASSO奖学金窗口";
+      if (!name && (MAIL_SENDER_DOMAIN_ALIASES[domain] === "swu.ac.jp" || domain === "swu.ac.jp")) {
         name = MAIL_SENDER_CAMPUS_NAMES[local.toLowerCase()];
         for (var i = 0; !name && i < MAIL_SENDER_CAMPUS_DEPARTMENTS.length; i++) {
           if (MAIL_SENDER_CAMPUS_DEPARTMENTS[i][0].test(local.toLowerCase())) name = MAIL_SENDER_CAMPUS_DEPARTMENTS[i][1];
@@ -52443,6 +52454,8 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
       if (!name && (domain === "house.jp" || domain === "shortstay.jp")) name = "Midorie Stay·租务部";
       if (!name && domain === "phone.jp") name = "Sumire Mobile";
       if (!name && domain === "campus-work.jp") name = "学生兼职中心";
+      var campusPrefix = MAIL_SENDER_CAMPUS_ADDRESS_PREFIXES[domain];
+      if (campusPrefix && local !== campusPrefix && local.indexOf(campusPrefix + ".") !== 0 && local.indexOf(campusPrefix + "-") !== 0) local = campusPrefix + "." + local;
       // 原奖学金由学校窗口转发，不使用现实机构的官方邮箱。
       var address = domain === "jasso-support.jp" ? "jasso@swu.ac.jp" : local + "@" + (MAIL_SENDER_DOMAIN_ALIASES[domain] || domain);
       return name ? name + " <" + address + ">" : address;
