@@ -37600,7 +37600,7 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
         "openFirstClassIntroduction", "saekiReply",
         "openAcademicAssignment",
         "openAcademicWeek2",
-        "addRenPreExamLivehouseTodo", "openRenFirstMeetingScene", "declineRenFirstInvite",
+        "addRenPreExamLivehouseTodo", "openRenFirstMeetingScene", "declineRenFirstInvite", "renReconnectReply", "renReconnectVisit", "renReconnectDecline",
         "acknowledgeOrientationSupplement",
         "startDormMoveInProcess", "dormMoveInAcknowledge", "aoiReplyType", "openAoiCurryScene",
         "watchTakahashiVideo", "attendTakahashiBriefing", "dormWelcomeResponse", "yotaOutfitJoin",
@@ -37996,6 +37996,9 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
     let renSeesYouAsAccomplice = false;
     let renExamFollowupSent = false;
     let renSecondhandLineUnlocked = false;
+    let renReconnectStatus = null;
+    let renReconnectReplyDay = null;
+    let renReconnectInviteSent = false;
     let yumaFriendship = 0;
     let yumaExamFollowupSent = false;
     let yumaExamFollowupSchedule = null;
@@ -38148,6 +38151,7 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
     let suppressAutosave = false;
     let freshGameSnapshot = null;
     const SAVE_BINDING_NAMES = (
+      "renReconnectStatus renReconnectReplyDay renReconnectInviteSent " +
       "seniorMealEndDay seniorMealEndHour " +
       "list selectedId unreadById nextMailId gameDay gameHour gameOver housingMode rentLabel rentAmount rentDaysLeft rentDueDay " +
       "shortstayRentStartDay shortstayRentPeriodDays dormRentStartDay dormRentPeriodDays rentPaid dormApplicationStarted dormInfoSubmitted dormDocsSubmitted dormStatementSubmitted dormFinalSubmitted dormApproved dormFeePaid " +
@@ -38292,6 +38296,11 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
         Object.keys(snapshot.state).forEach(function (name) {
           if (SAVE_BINDING_NAMES.indexOf(name) !== -1) restoreSaveBinding(name, snapshot.state[name]);
         });
+        if (!Object.prototype.hasOwnProperty.call(snapshot.state, "renReconnectStatus")) {
+          renReconnectStatus = null;
+          renReconnectReplyDay = null;
+          renReconnectInviteSent = false;
+        }
         authorMode = false;
         authorRandomMailEnabled = false;
         authorDormTestMode = false;
@@ -38304,6 +38313,8 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
         checkFirstClassIntroductionLine();
         checkFirstAcademicAssignmentLine();
         checkAcademicWeek2Line();
+        checkRenExamFollowupMail();
+        checkRenReconnectInviteMail();
         refreshGameAfterLoad(snapshot);
         var savedTime = snapshot.savedAt ? new Date(snapshot.savedAt) : null;
         setSaveStatus(savedTime && !isNaN(savedTime.getTime()) ? "已读取 " + pad2(savedTime.getHours()) + ":" + pad2(savedTime.getMinutes()) : "已读取");
@@ -45745,6 +45756,7 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
       checkRenFirstInviteMail();
       checkRenPreExamLivehouseMail();
       checkRenExamFollowupMail();
+      checkRenReconnectInviteMail();
       tryDeliverDormResidentMeetingNotice();
       checkDormPerformanceFeedback();
       checkSocialMails();
@@ -45861,7 +45873,6 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
     function checkRenExamFollowupMail() {
       if (gameOver) return;
       if (entranceExamCompleted !== true) return;
-      if (renPreExamLivehouseCompleted !== true) return;
       if (renExamFollowupSent === true) return;
       if (typeof entranceExamDay !== "number" || entranceExamDay <= 1) return;
 
@@ -45872,6 +45883,29 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
         gameDay > entranceExamDay + 1 ||
         (gameDay === entranceExamDay + 1 && gameHour >= 18);
       if (!canSendToday && !canSendTomorrow) return;
+
+      if (renPreExamLivehouseCompleted !== true) {
+        if (renFirstInviteSent !== true) return;
+        if (!hasMailWithId("ren_exam_followup_missed_001")) {
+          pushFixedMail({
+            id: "ren_exam_followup_missed_001", type: "social", subType: "ren", line: "ren_friendship", fixedMail: true,
+            from: "黒瀬 蓮 <ren.classmate@campus.edu>",
+            subject: "开学考怎么样？",
+            preview: "上次没在店里碰到你。忙的话也没事。",
+            body: "开学考怎么样？\n\n上次没在店里碰到你。忙的话也没事，我后来也没待多久。\n\n这两天学校后门有人摆旧教材，有几本好像是我们课上要用的。我准备下课去看看。\n\n你要是也缺书，下次可以一起。\n\nRen",
+            openMessage: "没有一起去店里，并不代表以后在学校也不说话了。",
+            logText: "黒瀬蓮问起你的开学考",
+            actions: [
+              { label: "跟他聊聊考试", renReconnectReply: "chat", result: "你简单回了考试的情况。\n\nRen 说最后几道题有点烦，又问你是不是也在找教材。你们聊了几句，没有提上次没去店里的事。" },
+              { label: "下次有空再约", renReconnectReply: "later", result: "你说这几天有点忙，下次有空再一起。\n\nRen 回了一句：“行。我看到书再发你。”" },
+              { label: "礼貌地保持距离", renReconnectReply: "distance", result: "你简单道了谢，没有接下一起出门的话题。\n\nRen 没有再追问。你们仍然是同课的同学，只是暂时没打算变得更熟。" },
+              { label: "删除" }
+            ], timeLabel: formatClockShort(), unread: true
+          });
+        }
+        renExamFollowupSent = true;
+        return;
+      }
 
       var targetId = null;
       var branch = null;
@@ -45971,6 +46005,69 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
       }
 
       renExamFollowupSent = true;
+    }
+
+    function checkRenReconnectInviteMail() {
+      if (gameOver || !entranceExamCompleted || !renExamFollowupSent || renReconnectInviteSent) return;
+      if (renReconnectStatus === "distance" || renReconnectStatus === "met") return;
+      var alreadyAcquainted = renPreExamLivehouseCompleted === true;
+      if (!alreadyAcquainted && renReconnectStatus !== "chat" && renReconnectStatus !== "later") return;
+      if (typeof entranceExamDay !== "number") return;
+      var dueDay = Math.max(entranceExamDay + 1, renReconnectReplyDay === null ? entranceExamDay + 1 : renReconnectReplyDay + 1);
+      if (gameDay < dueDay || (gameDay === dueDay && gameHour < 13)) return;
+      if (!hasMailWithId("ren_secondhand_reconnect_001")) {
+        pushFixedMail({
+          id: "ren_secondhand_reconnect_001", type: "social", subType: "ren", line: "ren_friendship", fixedMail: true,
+          from: "黒瀬 蓮 <ren.classmate@campus.edu>", subject: "后门那几本教材",
+          preview: "摊子下午还在。要不要下课一起看看？",
+          body: (renSecondhandLineUnlocked ? "我上次买的那箱教材，还有两本没卖出去。摊主这几天又带了一些。" : "学校后门这几天有个旧教材摊，我看见了我们课上那本。") + "\n\n学校后门，下午13:00到19:00。我准备下课去看看。\n\n你有空的话一起，逛一小时就差不多。看完不买也没事，先对一下版本。今天赶不上，也可以留着这封邮件，之后下午再去。\n\nRen",
+          openMessage: alreadyAcquainted ? "这次只是去看几本书。" : "这次见面不用坐到深夜。下课后去看几本书就好。",
+          logText: "黒瀬蓮约你去看二手教材",
+          actions: [
+            { label: "去看看（1小时）", renReconnectVisit: true, timeEffect: 1, result: "你下课后和 Ren 去了学校后门。\n\n他翻到一本教材的版权页，拿课程群里的书单对了一下。书名一样，版次却不同。\n\n“难怪便宜。”他说，把书放回去，又翻了下一本。\n\n你们看了几个摊子，聊了一点课上的事。最后谁也没急着买，先记下了价格。\n\n回去时，Ren 问了你下一节课的教室。你们约好，下次同一节课就坐近一点。" },
+            { label: "这次不去", renReconnectDecline: true, result: "你说这次先不去了。\n\nRen 回了句“好”，没有追问。以后同课碰到，仍然可以正常说话。" },
+            { label: "删除" }
+          ], timeLabel: formatClockShort(), unread: true
+        });
+      }
+      renReconnectInviteSent = true;
+    }
+
+    function handleRenReconnectAction(mail, act) {
+      if (gameOver || isActionDone(mail, act)) return;
+      if (act.renReconnectVisit && (gameHour < 13 || gameHour > 18)) {
+        showGameNotice("教材摊下午13:00到19:00开放，逛一小时最晚要在18:00出发。\n\n今天来不及的话，可以保留这封邮件，之后下午再去。");
+        return;
+      }
+      (mail.actions || []).forEach(function (choice) {
+        if (choice.renReconnectReply || choice.renReconnectVisit || choice.renReconnectDecline) markActionDone(mail, choice, choice === act ? "已选择" : "未选择");
+      });
+      var effects = {};
+      if (act.renReconnectReply) {
+        renReconnectStatus = act.renReconnectReply;
+        renReconnectReplyDay = gameDay;
+        prependLogLine(act.renReconnectReply === "distance" ? "你和黒瀬蓮暂时保持距离" : "你回复了黒瀬蓮的考后邮件");
+      } else if (act.renReconnectVisit) {
+        renReconnectStatus = "met";
+        renFriendship += 1;
+        socialConnection += 1;
+        effects = { timeEffect: 1, renFriendshipEffect: 1, socialConnectionEffect: 1 };
+        var beforeDay = gameDay, beforeHour = gameHour;
+        if (advanceGameHoursWithRules(1, { runAfterReason: "renReconnectVisit" })) {
+          refreshAfterStoryEvent();
+          saveGameState(true);
+          return;
+        }
+        handleDormCurfewViolation(mail, act, beforeDay, beforeHour);
+        prependLogLine("你和黒瀬蓮去看了二手教材", { hourOverride: beforeHour });
+      } else {
+        renReconnectStatus = "later";
+        prependLogLine("你婉拒了这次二手教材邀约");
+      }
+      checkRenReconnectInviteMail();
+      refreshAfterStoryEvent();
+      showResultOverlay(appendEffectLinesToText(act.result || "你回复了邮件。", effects));
+      saveGameState(true);
     }
 
     function scheduleClassScheduleIntroAfterTuitionPaid() {
@@ -53103,6 +53200,10 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
           btn.classList.add("done");
         }
         btn.addEventListener("click", function () {
+          if (act.renReconnectReply || act.renReconnectVisit || act.renReconnectDecline) {
+            handleRenReconnectAction(mail, act);
+            return;
+          }
           if (act.viewEntranceExamPastPaper === true && (entranceExamCompleted === true || (entranceExamDay !== null && (gameDay > entranceExamDay || (gameDay === entranceExamDay && gameHour >= 9))))) {
             markActionDone(mail, act, "已查看");
             showResultOverlay("你打开了参考卷。\n\n这次考试已经开始或结束，资料可以留作考后对照，不会改变已经结算的成绩。");
