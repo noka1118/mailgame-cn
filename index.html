@@ -48193,7 +48193,7 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
           if (!amount && Array.isArray(mail.amountRange)) amount = Number(mail.amountRange[0] || 0);
           var handled = (mail.actions || []).some(function (action) { return isActionDone(mail, action); });
           lines.push(mail.subject || "未命名邮件");
-          lines.push("发件人：" + (mail.from || "未知"));
+          lines.push("发件人：" + getCharacterSenderLine(mail.from || "未知"));
           if (amount) lines.push("金额：" + amount.toLocaleString("ja-JP") + "円");
           lines.push("处理结果：" + (handled ? "已处理" : "未处理"));
           lines.push("");
@@ -52304,10 +52304,148 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
       });
     }
 
+    // 虚构邮箱只用于游戏展示；不替换内部 from 键，以免影响旧存档和账单判定。
+    const MAIL_SENDER_DOMAIN_ALIASES = {
+      "campus.edu": "somewhere-u.ac.jp",
+      "somewhere.edu": "somewhere-u.ac.jp",
+      "student.campus.edu": "student.somewhere-u.ac.jp",
+      "dorm-campus.edu": "dorm.somewhere-u.ac.jp",
+      "student-union.edu": "clubs.somewhere-u.ac.jp",
+      "campus-bookstore.edu": "bookstore.somewhere-u.ac.jp",
+      "campus-clinic.edu": "health.somewhere-u.ac.jp",
+      "campus-pharmacy.edu": "pharmacy.somewhere-u.ac.jp",
+      "campus-cloud.edu": "cloud.somewhere-u.ac.jp",
+      "course-platform.edu": "lms.somewhere-u.ac.jp",
+      "print-campus.edu": "print.somewhere-u.ac.jp",
+      "cafeteria-campus.edu": "dining.somewhere-u.ac.jp",
+      "campus-store.edu": "coop.somewhere-u.ac.jp",
+      "campus-board.edu": "jobs.somewhere-u.ac.jp",
+      "campus-research.edu": "research.somewhere-u.ac.jp",
+      "campus-mail.edu": "mail.somewhere-u.ac.jp",
+      "campus-work.jp": "jobs.somewhere-u.ac.jp",
+      "campus-cafe.jp": "cafe.somewhere-u.ac.jp",
+      "house.jp": "midorie-stay.co.jp",
+      "shortstay.jp": "midorie-stay.co.jp",
+      "temporary-stay.jp": "midorie-stay.co.jp",
+      "phone.jp": "sumire-mobile.co.jp",
+      "mobile-service.jp": "sumire-mobile.co.jp",
+      "electric-service.jp": "aoba-denki.co.jp",
+      "water-service.jp": "aoba-suido.co.jp",
+      "internet-service.jp": "hikari-net.co.jp",
+      // 近似拼写是辨识假邮件的线索，不得并入正规机构域名。
+      "campus-edn.jp": "somewhere-u-ac.jp",
+      "campus-acccount.edu": "somewhere-u-acccount.jp",
+      "scholarshlp-office.edu": "scholarshlp-somewhere-u.jp",
+      "rnobile-service.jp": "surnire-mobile.co.jp",
+      "electric-servlce.jp": "aoba-denkl.co.jp",
+      "water-servlce.jp": "aoba-suldo.co.jp",
+      "intemet-service.jp": "hikari-nct.co.jp"
+    };
+
+    const MAIL_SENDER_PERSON_ALIASES = {
+      "ren.classmate@campus.edu": ["黒瀬 蓮", "ren.kurose@student.somewhere-u.ac.jp"],
+      "yuma.qsupport@campus.edu": ["梁悠真", "yuma.liang@student.somewhere-u.ac.jp"],
+      "aoi.miyake@campus.edu": ["三宅 葵", "aoi.miyake@student.somewhere-u.ac.jp"],
+      "yota.kobayashi@campus.edu": ["小林 陽太", "yota.kobayashi@student.somewhere-u.ac.jp"],
+      "saeki.haru@student.campus.edu": ["佐伯 遥", "haru.saeki@student.somewhere-u.ac.jp"],
+      "morita.naoko@campus.edu": ["森田直子", "naoko.morita@somewhere-u.ac.jp"],
+      "seiji.takahashi@dorm-campus.edu": ["高橋 誠司", "seiji.takahashi@dorm.somewhere-u.ac.jp"],
+      "mother@home.cn": ["妈妈", "qinghe_1976@163.com"],
+      "classmate@campus.edu": ["同班同学", "s26c018@student.somewhere-u.ac.jp"],
+      "friend@campus.edu": ["同学", "s26c031@student.somewhere-u.ac.jp"],
+      "senior@dorm-campus.edu": ["宿舍前辈", "s24d012@student.somewhere-u.ac.jp"],
+      "coworker@campus-work.jp": ["兼职同事", "shift.member17@jobs.somewhere-u.ac.jp"],
+      "student18942@campus.edu": ["s26c042", "s26c042@student.somewhere-u.ac.jp"],
+      "sato@somewhere.edu": ["佐藤老师", "sato@somewhere-u.ac.jp"],
+      "self@inbox.local": ["我", "s26c307@student.somewhere-u.ac.jp"]
+    };
+
+    const MAIL_SENDER_NAME_ALIASES = {
+      "Dormitory Office": "住宿办公室", "Academic Affairs Office": "教务处",
+      "Classmate": "同班同学", "Friend": "同学", "Dorm Senior": "宿舍前辈",
+      "Part-time Coworker": "兼职同事", "Self": "我", "Prof. Sato": "佐藤老师",
+      "Student Affairs Office": "学生事务处", "Student Affairs": "学生事务处",
+      "Orientation Office": "新生事务处", "Tuition Office": "财务处·学费缴纳",
+      "Campus Account": "信息中心·账户管理", "Scholarship Office": "奖学金事务室",
+      "Library Learning Support": "图书馆·Q Support", "Library Office": "图书馆",
+      "Campus Support Desk": "学生支援窗口", "Campus Support": "学生支援窗口",
+      "Campus Part-time Platform": "学生兼职中心", "Campus Event Office": "学生活动中心",
+      "Student Counseling": "学生心理咨询室", "Student Service Center": "学生服务中心",
+      "Security Office": "校园警备室", "Study Room System": "自习室预约系统",
+      "Academic Materials Office": "教学资料室", "Course Office": "课程事务室",
+      "Campus Clinic": "校园保健中心", "Campus Pharmacy": "校园药房",
+      "Campus Bookstore": "大学书店", "Campus Store": "校园商店",
+      "Campus Cloud": "信息中心·云存储", "Course Platform": "教学平台",
+      "Campus Print Center": "校内打印中心", "Print Center": "校内打印中心",
+      "Campus Locker": "校内储物柜服务", "Learning Software": "教学软件服务",
+      "Research Office": "研究支援室", "Research Panel": "研究参与平台",
+      "Facility Office": "设施管理处", "Cafeteria Office": "学生食堂",
+      "Admissions Support": "入学事务室", "Exam Office": "考试事务室",
+      "Student Task Board": "学生兼职公告栏", "Tutoring Board": "家教兼职公告栏",
+      "Media Task Board": "校园媒体兼职公告栏", "Cafe Shift": "校园咖啡店·排班",
+      "Electric Service": "青叶电力", "Water Service": "青叶水道",
+      "Internet Service": "Hikari Net", "Mobile Service": "Sumire Mobile",
+      "Short Stay Office": "Midorie Stay·租务部", "Temporary Stay Service": "Midorie Stay·住宿服务",
+      "JASSO Student Support": "学生事务处·JASSO奖学金窗口"
+    };
+
+    const MAIL_SENDER_CAMPUS_NAMES = {
+      tuition: "财务处·学费缴纳", registrar: "教务处", academic: "教务处",
+      "academic-office": "教务处", "academic-affairs": "教务处",
+      registration: "履修登记系统", admissions: "入学事务室", account: "信息中心·账户管理",
+      housing: "住宿办公室", "dorm-office": "住宿办公室", residence: "住宿办公室",
+      library: "图书馆", "library-desk": "图书馆服务台", qsupport: "图书馆·Q Support",
+      "course-system": "教学平台", "academic-system": "教务系统", lms: "教学平台",
+      "it-helpdesk": "信息中心服务台", helpdesk: "信息中心服务台",
+      "it-security": "信息安全中心", security: "信息安全中心", "mail-admin": "邮箱管理中心",
+      orientation: "新生事务处", "student-affairs": "学生事务处", "student-support": "学生支援室",
+      "support-work": "学生兼职中心", "campus-work": "学生兼职中心", studentwork: "学生兼职中心",
+      "financial-aid": "学生资助窗口", "student-union": "学生会", "club-office": "社团事务室",
+      "theater-club": "戏剧社", "film-club": "电影研究会", "art-club": "美术社",
+      "cultural-studies": "文化研究室", career: "就业支援中心", "career-center": "就业支援中心",
+      international: "国际交流中心", global: "国际交流中心", intl: "国际学生支援室",
+      facility: "设施管理处", "campus-planning": "校园规划办公室", "campus-security": "校园警备室",
+      "sports-center": "体育中心", cafeteria: "学生食堂", elevator: "设施管理处·电梯维护",
+      lostfound: "失物招领处", "lost-found": "失物招领处", mailroom: "校内邮务室",
+      print: "校内打印中心", bookstore: "大学书店", "campus-store": "校园商店",
+      "health-center": "校园保健中心", "learning-support": "学习支援室", "writing-center": "写作中心",
+      system: "学生邮箱系统", notice: "校园通知", support: "学生支援窗口"
+    };
+
+    const MAIL_SENDER_CAMPUS_DEPARTMENTS = [
+      [/academic|course|records|syllabus|exam|attendance|deadline|registrar/, "教务处"],
+      [/tuition|billing|bursar|finance|refund/, "财务处"],
+      [/library|learning|writing|teaching/, "学习支援中心"],
+      [/housing|residence|dorm|building|room/, "住宿与设施管理处"],
+      [/health|wellness|counsel|care/, "校园保健中心"],
+      [/security|privacy|account|login|system|wifi|cloud|storage|lms|mail|app/, "信息中心"],
+      [/club|activities|event|union/, "学生活动中心"],
+      [/student|support|forms|documents|certificate|service|policy/, "学生事务处"]
+    ];
+
     function getCharacterSenderLine(from) {
-      return String(from || "")
+      var raw = String(from || "").trim()
         .replace(/^Ren Kurose(?=\s*<|$)/i, "黒瀬 蓮")
         .replace(/^Yuma Liang(?=\s*<|$)/i, "梁悠真");
+      var parsed = raw.match(/^(?:(.*?)\s*<)?([A-Z0-9._%+-]+)@([A-Z0-9.-]+\.[A-Z]{2,})>?$/i);
+      if (!parsed) return raw;
+      var name = (parsed[1] || "").trim(), local = parsed[2], domain = parsed[3].toLowerCase();
+      var person = MAIL_SENDER_PERSON_ALIASES[(local + "@" + domain).toLowerCase()];
+      if (person) return (MAIL_SENDER_NAME_ALIASES[name] || name || person[0]) + " <" + person[1] + ">";
+      name = MAIL_SENDER_NAME_ALIASES[name] || name;
+      if (!name && (domain === "campus.edu" || domain === "somewhere.edu")) {
+        name = MAIL_SENDER_CAMPUS_NAMES[local.toLowerCase()];
+        for (var i = 0; !name && i < MAIL_SENDER_CAMPUS_DEPARTMENTS.length; i++) {
+          if (MAIL_SENDER_CAMPUS_DEPARTMENTS[i][0].test(local.toLowerCase())) name = MAIL_SENDER_CAMPUS_DEPARTMENTS[i][1];
+        }
+        if (!name) name = "学校通知";
+      }
+      if (!name && (domain === "house.jp" || domain === "shortstay.jp")) name = "Midorie Stay·租务部";
+      if (!name && domain === "phone.jp") name = "Sumire Mobile";
+      if (!name && domain === "campus-work.jp") name = "学生兼职中心";
+      // 原奖学金由学校窗口转发，不使用现实机构的官方邮箱。
+      var address = domain === "jasso-support.jp" ? "jasso@somewhere-u.ac.jp" : local + "@" + (MAIL_SENDER_DOMAIN_ALIASES[domain] || domain);
+      return name ? name + " <" + address + ">" : address;
     }
 
     function getSenderDisplayName(from) {
@@ -52318,6 +52456,8 @@ Q-support 是面向学生开放的学习辅助服务，由图书馆和学生支�
       if (namedText && /[\u3400-\u9fff]/.test(namedText)) return namedText;
       if (/^Ren Kurose$/i.test(namedText)) return "黒瀬 蓮";
       if (/^Yuma Liang$/i.test(namedText)) return "梁悠真";
+      // 品牌、服务商和作者自定义名称不再被折叠成“校外服务”。
+      if (namedText) return namedText;
       var lower = raw.toLowerCase();
       var mappings = [
         [/student-affairs/, "学生事务处"],
